@@ -13,6 +13,7 @@ import path from 'path';
 
 import yazl from 'yazl';
 
+import { deleteActivity } from '../src/adapter/contentMap';
 import { importPackage } from '../src/adapter/import';
 import { db } from '../src/db';
 import { createH5PRuntime } from '../src/h5p/createH5PEditor';
@@ -140,6 +141,8 @@ async function main(): Promise<void> {
   console.log(`  maxFileSize: ${runtime.config.maxFileSize}  maxTotalSize: ${runtime.config.maxTotalSize}`);
   console.log('');
 
+  const created: Array<{ activityUuid: string; contentId: string }> = [];
+
   for (const probe of PROBES) {
     const file = await buildPackage(dir, probe.name, probe.files, probe.content);
     let verdict: string;
@@ -147,6 +150,10 @@ async function main(): Promise<void> {
 
     try {
       const result = await importPackage(runtime.editor, file, AUTHOR_USER);
+      created.push({
+        activityUuid: result.activity.uuid,
+        contentId: result.h5pContentId
+      });
       verdict = 'IMPORTED';
       detail = `activity ${result.activity.uuid} (h5p content ${result.h5pContentId})`;
     } catch (error: any) {
@@ -163,6 +170,21 @@ async function main(): Promise<void> {
     console.log(`          expected to ${probe.expectation}; ${ok ? 'behaved as expected at this layer' : 'DID NOT'}`);
     if (detail.trim()) console.log(`          ${detail.trim()}`);
     console.log('');
+  }
+
+  // Anything that imported here is deliberately hostile content. Leaving it in
+  // the datastore would mean an XSS payload sitting in the spike environment
+  // (and firing alert() dialogs in every later browser test), so it is removed.
+  for (const item of created) {
+    try {
+      await runtime.editor.deleteContent(item.contentId, AUTHOR_USER);
+    } catch {
+      // best effort; the PFY row goes regardless
+    }
+    deleteActivity(item.activityUuid);
+  }
+  if (created.length) {
+    console.log(`cleaned up ${created.length} imported probe activit${created.length === 1 ? 'y' : 'ies'}\n`);
   }
 
   console.log(

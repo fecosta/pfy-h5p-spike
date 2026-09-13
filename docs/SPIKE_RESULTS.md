@@ -379,7 +379,8 @@ shape; not something to adopt.
 ## 11. Security observations
 
 Probes were run against the **real** import path with nothing disabled
-(`pnpm --filter @spike/h5p-runtime probe:security`).
+(`pnpm --filter @spike/h5p-runtime probe:security`). The probe deletes whatever
+it manages to import, so no hostile content is left behind in the environment.
 
 | Probe | Result |
 |---|---|
@@ -629,7 +630,7 @@ upload validation — which would also close part of §11).
 | Independent environment (WordPress) | Where practical | ✅ WP 7 + H5P 1.17.9 | automated (Playwright) |
 | Consultant usability test | Optional | ❌ **not performed** | — |
 
-**Automated:** 42 unit tests (vitest) + 24 browser tests (Playwright, Chromium +
+**Automated:** 42 unit tests (vitest) + 23 browser tests (Playwright, Chromium +
 WebKit) + the 185-package import probe + the security probe.
 **Manual:** none of the claims above rest on manual inspection.
 **Not done:** physical-device mobile testing, consultant usability testing,
@@ -661,7 +662,7 @@ pnpm create:from-draft
 # checks
 pnpm type-check
 pnpm test                       # 42 unit tests
-pnpm e2e                        # 24 browser tests (starts the runtime if needed)
+pnpm e2e                        # 23 browser tests (starts the runtime if needed)
 
 # WordPress round-trip
 pnpm wp:up

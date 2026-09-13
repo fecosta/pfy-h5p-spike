@@ -18,7 +18,12 @@ export default defineConfig({
     screenshot: 'only-on-failure'
   },
   projects: [
-    { name: 'desktop', use: { ...devices['Desktop Chrome'] } },
+    {
+      name: 'desktop',
+      use: { ...devices['Desktop Chrome'] },
+      // The responsive spec is meaningful only under the mobile device profile.
+      testIgnore: /responsive\.spec\.ts/
+    },
     { name: 'mobile', use: { ...devices['iPhone 13'] }, testMatch: /responsive\.spec\.ts/ }
   ],
   webServer: {

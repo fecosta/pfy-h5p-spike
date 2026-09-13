@@ -17,7 +17,7 @@ This is not production code. It exists to retire risk and then be thrown away.
 |---|---|
 | Legacy WordPress packages imported | **185 / 185**, 0 failures, 16.6s |
 | Activities rendered in a real browser | **202 / 202**, no console or network errors |
-| Automated checks | 42 unit tests + 24 browser tests (Chromium + WebKit) |
+| Automated checks | 42 unit tests + 23 browser tests (Chromium + WebKit) |
 | Package round-trip | Lumi → Lumi **and** Lumi → WordPress 7 + H5P 1.17.9 |
 | Most important finding | the **import path does not sanitize params** → stored XSS (§11) |
 

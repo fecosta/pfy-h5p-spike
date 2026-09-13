@@ -188,6 +188,15 @@ export function syncFromEditor(
   return getActivity(existingUuid)!;
 }
 
+/** Removes a PFY activity and its mapping entirely. Used by cleanup paths. */
+export function deleteActivity(activityUuid: string): void {
+  const conn = db();
+  conn.prepare('DELETE FROM attempt_tokens WHERE attempt_uuid IN (SELECT uuid FROM activity_attempts WHERE activity_id = ?)').run(activityUuid);
+  conn.prepare('DELETE FROM activity_attempts WHERE activity_id = ?').run(activityUuid);
+  conn.prepare('DELETE FROM h5p_content_map WHERE activity_uuid = ?').run(activityUuid);
+  conn.prepare('DELETE FROM activities WHERE uuid = ?').run(activityUuid);
+}
+
 export function forgetContent(h5pContentId: string): void {
   const conn = db();
   const uuid = toActivityUuid(h5pContentId);
