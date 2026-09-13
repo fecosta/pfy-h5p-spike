@@ -1,0 +1,36 @@
+# Deterministic stand-in for AI output.
+#
+# This is the contract an LLM would be asked to produce: small, reviewable, and
+# strictly validated. No LLM is invoked anywhere in the spike — the transform is
+# what is being proven, not the generation.
+type: multiple-choice
+title: Por ou para?
+language: pt-BR
+level: A2
+pass_percentage: 100
+allow_retry: true
+allow_show_solution: true
+randomize_answers: false
+questions:
+  - prompt: Eu vou ___ São Paulo amanhã.
+    answers:
+      - text: para
+        correct: true
+        feedback_when_chosen: Correto. "Para" indica destino.
+      - text: por
+        correct: false
+        feedback_when_chosen: Aqui usamos "para" para indicar destino.
+    feedback:
+      correct: Muito bem! Você acertou @score de @total.
+      incorrect: Reveja o uso de "por" e "para".
+  - prompt: Passei ___ aquela rua ontem.
+    answers:
+      - text: por
+        correct: true
+        feedback_when_chosen: Correto. "Por" indica trajeto.
+      - text: para
+        correct: false
+        feedback_when_chosen: '"Para" indica destino, não trajeto.'
+    feedback:
+      correct: Isso mesmo! @score de @total.
+      incorrect: '"Por" é usado para trajeto ou meio.'

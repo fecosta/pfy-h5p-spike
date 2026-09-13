@@ -1,0 +1,33 @@
+node_modules/
+dist/
+build/
+.next/
+*.tsbuildinfo
+
+# Generated H5P runtime state (core/editor client files, installed libraries, content)
+apps/h5p-runtime/h5p/core/
+apps/h5p-runtime/h5p/editor/
+apps/h5p-runtime/h5p/libraries/
+apps/h5p-runtime/h5p/content/
+apps/h5p-runtime/h5p/temp/
+apps/h5p-runtime/h5p/user-data/
+apps/h5p-runtime/h5p/exports/
+apps/h5p-runtime/h5p/CORE_VERSIONS.txt
+apps/h5p-runtime/h5p/config.json
+
+# Databases / exports / reports containing content
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+out/
+playwright-report/
+test-results/
+
+# Fixtures are real PFY course content: never published to a public repo.
+fixtures/**/*.h5p
+
+.env
+.env.*
+!.env.example
+.DS_Store

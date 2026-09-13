@@ -1,0 +1,44 @@
+{
+  "name": "@spike/h5p-runtime",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Express host for the Lumi H5P runtime + the PFY H5P adapter boundary.",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "start": "tsx src/server.ts",
+    "type-check": "tsc --noEmit",
+    "test": "vitest run",
+    "import": "tsx scripts/import-h5p.ts",
+    "probe:bulk-import": "tsx scripts/bulk-import-probe.ts",
+    "normalize:libraries": "tsx scripts/normalize-libraries.ts",
+    "export": "tsx scripts/export-h5p.ts",
+    "inspect:package": "tsx scripts/inspect-package.ts",
+    "create:from-draft": "tsx scripts/create-from-draft.ts",
+    "hub:install": "tsx scripts/hub-install.ts",
+    "probe:security": "tsx scripts/security-probe.ts"
+  },
+  "dependencies": {
+    "@lumieducation/h5p-express": "10.0.5",
+    "@lumieducation/h5p-server": "10.0.4",
+    "@lumieducation/h5p-svg-sanitizer": "10.0.4",
+    "@spike/h5p-authoring-draft": "workspace:*",
+    "@spike/learning-contract": "workspace:*",
+    "cors": "^2.8.5",
+    "express": "4.21.2",
+    "express-fileupload": "^1.5.1",
+    "i18next": "^24.2.3",
+    "i18next-fs-backend": "^2.6.8",
+    "yauzl-promise": "^4.0.0",
+    "yazl": "^3.3.1"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/express-fileupload": "^1.5.1",
+    "@types/node": "^22.13.1",
+    "@types/yazl": "^3.3.1",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3",
+    "vitest": "^3.0.5"
+  }
+}

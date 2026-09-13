@@ -1,0 +1,18 @@
+{
+  "name": "@spike/e2e",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Playwright checks that produce the spike's automated evidence.",
+  "scripts": {
+    "e2e": "playwright test",
+    "e2e:wp": "playwright test specs/wordpress-roundtrip.spec.ts",
+    "type-check": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0",
+    "@types/node": "^22.13.1",
+    "@types/yauzl-promise": "4.0.1",
+    "typescript": "^5.7.3",
+    "yauzl-promise": "^4.0.0"
+  }
+}

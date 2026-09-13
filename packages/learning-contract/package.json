@@ -1,0 +1,14 @@
+{
+  "name": "@spike/learning-contract",
+  "version": "0.0.0",
+  "private": true,
+  "description": "PFY learning domain contract. Contains NO Lumi/H5P types by design.",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": {
+    "type-check": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": { "zod": "^3.24.1" },
+  "devDependencies": { "typescript": "^5.7.3", "vitest": "^3.0.5" }
+}

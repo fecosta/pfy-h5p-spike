@@ -1,0 +1,59 @@
+# Disposable WordPress + H5P, used only to verify that a package exported by the
+# Lumi runtime still works in an independent H5P implementation — the one PFY
+# runs today.
+#
+# Nothing here touches the production PFY site or database. Tear it down with
+# `docker compose down -v`, which removes both volumes and leaves nothing behind.
+# (A tmpfs mount for /var/lib/mysql looks tidier but fails: the mount is
+# root-owned and MariaDB's init cannot write to it.)
+services:
+  db:
+    image: mariadb:lts-ubi
+    environment:
+      MARIADB_DATABASE: wp
+      MARIADB_USER: wp
+      MARIADB_PASSWORD: wp
+      MARIADB_ROOT_PASSWORD: root
+    volumes:
+      - db:/var/lib/mysql
+    healthcheck:
+      test: ['CMD', 'healthcheck.sh', '--connect', '--innodb_initialized']
+      interval: 5s
+      retries: 30
+
+  wp:
+    image: wordpress:php8.3-apache
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - '8090:80'
+    environment:
+      WORDPRESS_DB_HOST: db
+      WORDPRESS_DB_NAME: wp
+      WORDPRESS_DB_USER: wp
+      WORDPRESS_DB_PASSWORD: wp
+      WORDPRESS_DEBUG: '1'
+    volumes:
+      - wp:/var/www/html
+      - ./uploads.ini:/usr/local/etc/php/conf.d/zz-uploads.ini:ro
+      - ./exports:/exports
+
+  cli:
+    image: wordpress:cli
+    depends_on:
+      - wp
+    user: '33:33'
+    volumes:
+      - wp:/var/www/html
+      - ./exports:/exports
+    environment:
+      WORDPRESS_DB_HOST: db
+      WORDPRESS_DB_NAME: wp
+      WORDPRESS_DB_USER: wp
+      WORDPRESS_DB_PASSWORD: wp
+    entrypoint: ['sleep', 'infinity']
+
+volumes:
+  wp:
+  db:

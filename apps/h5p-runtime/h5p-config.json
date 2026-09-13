@@ -1,0 +1,11 @@
+{
+  "baseUrl": "/h5p",
+  "uuid": "9f3d5c21-4a6e-4c58-9c1f-6b2d7e8a1042",
+  "siteType": "local",
+  "platformName": "PFY-H5P-Spike",
+  "platformVersion": "0.0.0",
+  "setFinishedEnabled": true,
+  "contentUserStateSaveInterval": 10000,
+  "hubContentTypesEndpoint": "https://api.h5p.org/v1/content-types/",
+  "hubRegistrationEndpoint": "https://api.h5p.org/v1/sites"
+}

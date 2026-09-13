@@ -1,0 +1,25 @@
+{
+  "name": "pfy-h5p-spike",
+  "private": true,
+  "description": "Disposable spike: is the Lumi H5P Node.js ecosystem a viable replacement for PFY's WordPress H5P?",
+  "engines": {
+    "node": ">=22"
+  },
+  "packageManager": "pnpm@11.24.0",
+  "scripts": {
+    "setup:core": "apps/h5p-runtime/scripts/download-core.sh",
+    "fixtures:copy": "bash fixtures/copy-fixtures.sh",
+    "dev:runtime": "pnpm --filter @spike/h5p-runtime dev",
+    "dev:web": "pnpm --filter @spike/web dev",
+    "import": "pnpm --filter @spike/h5p-runtime import",
+    "probe:bulk-import": "pnpm --filter @spike/h5p-runtime probe:bulk-import",
+    "type-check": "pnpm -r type-check",
+    "test": "pnpm -r test",
+    "e2e": "pnpm --filter @spike/e2e e2e",
+    "e2e:wp": "pnpm --filter @spike/e2e e2e:wp",
+    "create:from-draft": "pnpm --filter @spike/h5p-runtime create:from-draft",
+    "hub:install": "pnpm --filter @spike/h5p-runtime hub:install",
+    "wp:up": "docker compose -f infra/wordpress/docker-compose.yml up -d",
+    "wp:down": "docker compose -f infra/wordpress/docker-compose.yml down -v"
+  }
+}
