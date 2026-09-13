@@ -66,10 +66,18 @@ Two processes, on purpose: `apps/h5p-runtime` (Express, :8080) owns everything
 H5P; `apps/web` (Next.js, :3000) is the PFY-shaped consumer and talks to the
 runtime only over HTTP.
 
-**The boundary held.** Nothing outside `src/adapter/**` imports
-`@lumieducation/*`. No Lumi content id, filesystem path or raw xAPI statement
-appears in `packages/learning-contract`, in any PFY-facing API response, or in
-any PFY URL. The one deliberate exception is documented in §7.
+**The boundary held**, with one documented exception (§7).
+
+`packages/learning-contract` — the PFY domain — contains no Lumi or H5P types at
+all; the only occurrences of the word "H5P" in it are explanatory comments. No
+Lumi content id, filesystem path or raw xAPI statement appears in any PFY-facing
+API response or any PFY URL.
+
+Lumi imports are confined to where they are unavoidable: `src/h5p/**` (runtime
+wiring), `src/adapter/import.ts` (type-only), and a single dynamically-imported
+client component in `apps/web`. Two `api/routes.ts` endpoints return Lumi's own
+player/editor *model* objects, because those feed Lumi's own web components;
+they are keyed by PFY activity uuid and are labelled as such in the source.
 
 The contract mirrors the model that already exists in `repos/pfy-platform`
 (`packages/activity-engine`, `activity_attempts`), so spike output maps 1:1 onto

@@ -43,11 +43,20 @@ docs/SPIKE_RESULTS.md   The deliverable.
 PFY domain  →  H5P Adapter  →  Lumi runtime
 ```
 
-Nothing outside `apps/h5p-runtime/src/adapter/**` imports `@lumieducation/*`, and
-no Lumi content id, filesystem path or raw xAPI statement reaches
-`packages/learning-contract`, a PFY API response, or a PFY URL. The single
-deliberate exception — a DOM attribute the player web component requires — is
-documented in `docs/SPIKE_RESULTS.md` §7.
+`packages/learning-contract` — the PFY domain — contains **no Lumi or H5P types
+at all**, and no Lumi content id, filesystem path or raw xAPI statement reaches a
+PFY API response or a PFY URL. Lumi appears only where it must:
+`apps/h5p-runtime/src/h5p/**` wires the runtime, `src/adapter/import.ts` imports
+its types (type-only), and one client component in `apps/web` dynamically imports
+the browser web components. The single identity compromise — a DOM attribute the
+player component requires — is documented in `docs/SPIKE_RESULTS.md` §7.
+
+Verify it:
+
+```bash
+grep -rn "lumieducation" packages/learning-contract/src/   # comments only
+grep -rl "@lumieducation" apps packages --include="*.ts" --include="*.tsx"
+```
 
 ## Running it
 
