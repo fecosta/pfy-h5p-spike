@@ -51,6 +51,13 @@ async function main(): Promise<void> {
       console.log(`    library   ${result.mainLibrary}`);
       console.log(`    legacy WP id ${result.activity.legacy_h5p_content_id ?? '—'}`);
       console.log(`    libraries new:${s.new} patched:${s.patch} skipped:${s.none}`);
+      const san = result.sanitization;
+      console.log(
+        `    sanitization: ${san.changed ? 'params changed' : 'no change'}` +
+          (san.findingsBefore.length
+            ? ` — removed ${san.findingsBefore.length} unsafe construct(s): ${[...new Set(san.findingsBefore.map((f) => f.rule))].join(', ')}`
+            : ' — no unsafe markup found')
+      );
       console.log(`    play      http://localhost:8080/play/${result.activity.uuid}`);
     } catch (error: any) {
       console.error(`✗ ${path.basename(resolved)}: ${error?.message ?? error}`);

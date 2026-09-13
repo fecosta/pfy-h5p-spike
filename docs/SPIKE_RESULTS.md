@@ -57,6 +57,7 @@ PFY domain  (packages/learning-contract)        ← canonical, contains zero Lum
       │   xapi.ts         xAPI statement → PFY outcome
       │   attempts.ts     append-only attempts, token-gated, idempotent
       │   mapping.ts      H5P behaviour → PFY behavior; WordPress id recovery
+      │   sanitize.ts     closes h5p-server's import-path sanitization gap
       ▼
   Lumi H5P runtime  (@lumieducation/h5p-server 10.0.4)
       libraries/ content/ temp/ user-data/ on the filesystem
@@ -397,30 +398,47 @@ it manages to import, so no hostile content is left behind in the environment.
 | `.html` inside `content/` | **rejected** — `not-in-whitelist` |
 | bundled library shipping `backdoor.php` | **rejected** — `not-in-whitelist` |
 | zip path traversal (`../escaped.txt`) | **rejected** — but surfaces as an unhandled **HTTP 500** with a raw `Relative path: …` message rather than a clean 4xx |
-| `<script>` / `<img onerror>` inside content **params** | **IMPORTED VERBATIM AND EXECUTES** ⚠️ |
+| `<script>` / `<img onerror>` inside content **params** | imported verbatim by Lumi — **now sanitized by the adapter** (see below) |
 
-### ⚠️ Stored XSS via the import path
+### Stored XSS via the import path — found, and fixed in the adapter
 
 A package whose `content.json` contains `<script>alert(1)</script>` or
-`<img src=x onerror=…>` imports successfully, is stored **unmodified**, and the
-payload **executes in the learner's browser** when the activity is played
-(confirmed: both the script tag and the `onerror` handler fired).
+`<img src=x onerror=…>` imports successfully and, **with stock h5p-server 10.0.4,
+is stored unmodified and the payload executes in the learner's browser** when the
+activity is played. This was confirmed in a real browser: both the script tag and
+the `onerror` handler fired.
 
-The same payload saved through the **editor** *is* sanitized — after one editor
-save the stored params contain inert text. So:
+The same payload saved through the **editor** *is* sanitized. The asymmetry is
+the bug:
 
 - `H5PEditor.saveOrUpdateContent` → `ContentStorer` → `SemanticsEnforcer` →
   `sanitize-html`: **sanitized**
 - `PackageImporter.addPackageLibrariesAndContent` (the migration/upload path):
   **not sanitized**
 
-Upstream describes `SemanticsEnforcer` as *"very incomplete and mostly only a
-stub"* and validates only `text` and `library` semantic types. This is a real
-gap, not a misconfiguration. Mitigations, in order of preference: sanitize params
-in the adapter on import; restrict import to trusted operators; or re-save
-imported content through the editor pipeline. PFY's own 185 packages are
-first-party and contain no such payloads, so migration is safe — but **any
-future "upload a .h5p" feature is not**.
+**Fix implemented:** `apps/h5p-runtime/src/adapter/sanitize.ts`. Imported params
+are run through the very same `SemanticsEnforcer` the editor path uses — not a
+second, hand-rolled sanitizer whose rules would drift from the editor's — and the
+result is then re-scanned for dangerous constructs. Anything still unsafe after
+sanitization fails the import loudly rather than being stored.
+
+Verified after the fix:
+
+| Check | Result |
+|---|---|
+| Crafted package imported, then played in a browser | payload **does not execute**; no `<script>` or `onerror` in the DOM; activity still renders with both answers |
+| Unsafe constructs removed from the probe package | **3** (`script-tag`, `inline-event-handler`), **0** residual |
+| All 185 real PFY packages scanned for unsafe markup | **0 flagged** — no false positives on genuine content |
+| Effect on legitimate content | text, tags and file references preserved; `&nbsp;` is decoded to a real U+00A0 (not dropped), and a stray Google-Translate `id` attribute is removed |
+| Media fixture after sanitized import | 26 audio + 1 image intact, all 26 hotspot audio references preserved |
+
+Covered by unit tests (`test/sanitize.test.ts`) and a browser regression test
+(`e2e/specs/security.spec.ts`) asserting both directions: the exploit must not
+execute, and legitimate Portuguese markup must survive unchanged.
+
+This closes the gap for PFY's own import path. It does **not** fix h5p-server
+itself, so the underlying limitation still applies to any other consumer of the
+library.
 
 ### Other observations
 
@@ -505,7 +523,7 @@ devices consultants actually use.
    in the payload or the interface.
 3. **`completionTime` is effectively never populated** on the xAPI-derived path;
    duration must come from the statement or be measured.
-4. **The import path does not sanitize params** (§11).
+4. **The import path does not sanitize params** (§11) — mitigated in the adapter, but still true of the library itself.
 5. **`enableHubLocalization: true` crashes without a translation function** —
    `TypeError: Cannot read properties of undefined` from
    `ContentTypeInformationRepository.localizeHubInfo`, not a graceful fallback.
@@ -532,7 +550,7 @@ devices consultants actually use.
 
 | Risk | Severity | Notes |
 |---|---|---|
-| Stored XSS on the import path | **High** | Must be closed before any non-operator upload path exists |
+| Stored XSS on the import path | ~~High~~ → **Low** | Closed in the adapter and covered by tests (§11). Residual risk is that the fix lives in PFY code, so it must be carried forward rather than assumed from the library. |
 | Import order changes library patch levels | Medium | Deterministic after a full batch; pre-normalizing libraries would remove it entirely |
 | 27% of legacy content cannot report a score | Medium | Product decision: what "done" means for non-scoring activities |
 | Client-reported scores for H5P activities | Medium | Different trust model from PFY's existing server-side scorers |
@@ -553,10 +571,13 @@ legacy editing work in the stock editor, packages round-trip through an
 independent WordPress installation, results normalize into PFY's existing
 contract, and the PFY domain stayed free of Lumi concepts throughout.
 
-It is not an unconditional GO because of bounded, quantified issues:
+It is not an unconditional GO because of bounded, quantified issues (the first
+of which is already resolved in the spike):
 
-1. **Close the import-path XSS gap** before exposing any upload path beyond
-   trusted operators. Sanitize params in the adapter on import. *(Required.)*
+1. **Import-path XSS gap — already closed in this spike** (§11). The adapter
+   sanitizes imported params through the editor's own enforcer and rejects
+   anything that survives. *(Carry this code forward; do not rely on the
+   library.)*
 2. **Decide the completion semantics for the 27%** of content that cannot score.
    `score_provenance` and a nullable score are in the contract; the product rule
    is not. *(Required.)*
@@ -638,7 +659,7 @@ upload validation — which would also close part of §11).
 | Independent environment (WordPress) | Where practical | ✅ WP 7 + H5P 1.17.9 | automated (Playwright) |
 | Consultant usability test | Optional | ❌ **not performed** | — |
 
-**Automated:** 42 unit tests (vitest) + 23 browser tests (Playwright, Chromium +
+**Automated:** 49 unit tests (vitest) + 25 browser tests (Playwright, Chromium +
 WebKit) + the 185-package import probe + the security probe.
 **Manual:** none of the claims above rest on manual inspection.
 **Not done:** physical-device mobile testing, consultant usability testing,
@@ -669,8 +690,8 @@ pnpm create:from-draft
 
 # checks
 pnpm type-check
-pnpm test                       # 42 unit tests
-pnpm e2e                        # 23 browser tests (starts the runtime if needed)
+pnpm test                       # 49 unit tests
+pnpm e2e                        # 25 browser tests (starts the runtime if needed)
 
 # WordPress round-trip
 pnpm wp:up

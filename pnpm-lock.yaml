@@ -114,12 +114,18 @@ importers:
       '@types/yauzl-promise':
         specifier: 4.0.1
         version: 4.0.1
+      '@types/yazl':
+        specifier: ^3.3.1
+        version: 3.3.1
       typescript:
         specifier: ^5.7.3
         version: 5.9.3
       yauzl-promise:
         specifier: ^4.0.0
         version: 4.0.0
+      yazl:
+        specifier: ^3.3.1
+        version: 3.3.1
 
   packages/h5p-authoring-draft:
     dependencies:

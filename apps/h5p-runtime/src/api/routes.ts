@@ -5,7 +5,12 @@ import { importPackage } from '../adapter/import';
 import { AUTHOR_USER, LEARNER_USER } from '../h5p/user';
 import { db } from '../db';
 import * as attempts from '../adapter/attempts';
-import { getActivity, listActivities, toH5PContentId } from '../adapter/contentMap';
+import {
+  deleteActivity,
+  getActivity,
+  listActivities,
+  toH5PContentId
+} from '../adapter/contentMap';
 import { normalizeStatement, type XapiStatement } from '../adapter/xapi';
 
 /** The origin this runtime is reachable at, as seen by the requesting page. */
@@ -83,6 +88,27 @@ export function createApiRouter(runtime: H5PRuntime): Router {
       return;
     }
     res.json({ data: activity });
+  });
+
+  /** Removes an activity and the content behind it. Used by probes/tests. */
+  router.delete('/activities/:uuid', async (req, res, next) => {
+    try {
+      const contentId = toH5PContentId(req.params.uuid);
+      if (!contentId) {
+        res.status(404).json({ error: 'unknown activity' });
+        return;
+      }
+      try {
+        await runtime.editor.deleteContent(contentId, AUTHOR_USER);
+      } catch {
+        // Best effort: the PFY rows go regardless, so a half-deleted runtime
+        // cannot leave an orphan activity behind.
+      }
+      deleteActivity(req.params.uuid);
+      res.status(204).end();
+    } catch (error) {
+      next(error);
+    }
   });
 
   /** Starts a new attempt. This is the only way an attempt comes into being. */

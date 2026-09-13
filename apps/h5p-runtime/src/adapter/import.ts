@@ -6,6 +6,7 @@ import type { ActivityRef } from '@spike/learning-contract';
 import type { SpikeUser } from '../h5p/user';
 import { registerActivity } from './contentMap';
 import { deriveBehavior, parseLegacyWordPressId } from './mapping';
+import { sanitizeImportedContent, type SanitizationReport } from './sanitize';
 
 /**
  * "H5P.Blanks 1.14" — whitespace-separated, which is what
@@ -30,6 +31,8 @@ export interface ImportOutcome {
   h5pContentId: string;
   installedLibraries: H5P.ILibraryInstallResult[];
   mainLibrary: string;
+  /** What sanitization found and changed. See adapter/sanitize.ts. */
+  sanitization: SanitizationReport;
 }
 
 /**
@@ -58,10 +61,21 @@ export async function importPackage(
   // escapes the adapter.
   const h5pContentId = String(id);
   const filename = path.basename(packagePath);
+  const ubername = mainLibraryUbername(metadata);
+
+  // The importer stores params verbatim — it does not sanitize, unlike the
+  // editor save path. Do it here, before the content is ever playable.
+  const sanitization = await sanitizeImportedContent(editor, {
+    contentId: h5pContentId,
+    mainLibraryUbername: ubername,
+    metadata,
+    params: parameters,
+    user
+  });
 
   const activity = registerActivity({
     title: metadata.title || filename.replace(/\.h5p$/i, ''),
-    mainLibrary: mainLibraryUbername(metadata),
+    mainLibrary: ubername,
     h5pContentId,
     behavior: deriveBehavior(parameters),
     sourcePackage: filename,
@@ -73,7 +87,8 @@ export async function importPackage(
     activity,
     h5pContentId,
     installedLibraries,
-    mainLibrary: mainLibraryUbername(metadata)
+    mainLibrary: ubername,
+    sanitization
   };
 }
 

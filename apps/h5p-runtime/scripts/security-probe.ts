@@ -15,6 +15,7 @@ import yazl from 'yazl';
 
 import { deleteActivity } from '../src/adapter/contentMap';
 import { importPackage } from '../src/adapter/import';
+import { findUnsafeMarkup } from '../src/adapter/sanitize';
 import { db } from '../src/db';
 import { createH5PRuntime } from '../src/h5p/createH5PEditor';
 import { AUTHOR_USER } from '../src/h5p/user';
@@ -154,8 +155,21 @@ async function main(): Promise<void> {
         activityUuid: result.activity.uuid,
         contentId: result.h5pContentId
       });
-      verdict = 'IMPORTED';
-      detail = `activity ${result.activity.uuid} (h5p content ${result.h5pContentId})`;
+
+      // Re-read what was actually persisted, not what we think we stored.
+      const stored = await runtime.editor.contentManager.getContentParameters(
+        result.h5pContentId,
+        AUTHOR_USER
+      );
+      const residual = findUnsafeMarkup(stored);
+      const removed = result.sanitization.findingsBefore.length;
+
+      verdict = residual.length > 0 ? 'UNSAFE' : 'SANITIZED';
+      detail =
+        `activity ${result.activity.uuid} — ` +
+        `${removed} unsafe construct(s) in the package, ` +
+        `${residual.length} still present after import` +
+        (removed ? ` (removed: ${[...new Set(result.sanitization.findingsBefore.map((f) => f.rule))].join(', ')})` : '');
     } catch (error: any) {
       verdict = 'REJECTED';
       detail = `${error?.errorId ?? ''} ${String(error?.message ?? error).slice(0, 120)}`;
@@ -163,12 +177,12 @@ async function main(): Promise<void> {
 
     const ok =
       (probe.expectation === 'reject' && verdict === 'REJECTED') ||
-      (probe.expectation === 'sanitize' && verdict === 'IMPORTED');
+      (probe.expectation === 'sanitize' && verdict === 'SANITIZED');
 
-    console.log(`${verdict.padEnd(9)} ${probe.name}`);
-    console.log(`          ${probe.description}`);
-    console.log(`          expected to ${probe.expectation}; ${ok ? 'behaved as expected at this layer' : 'DID NOT'}`);
-    if (detail.trim()) console.log(`          ${detail.trim()}`);
+    console.log(`${verdict.padEnd(10)} ${probe.name}`);
+    console.log(`           ${probe.description}`);
+    console.log(`           expected to ${probe.expectation}; ${ok ? 'OK' : '*** DID NOT ***'}`);
+    if (detail.trim()) console.log(`           ${detail.trim()}`);
     console.log('');
   }
 
@@ -188,9 +202,10 @@ async function main(): Promise<void> {
   }
 
   console.log(
-    'NOTE: "xss-in-params" is expected to import — the question is whether the\n' +
-      'stored params were sanitized. Inspect the stored content.json; in 10.0.4\n' +
-      'the import path does NOT sanitize, while an editor save does.'
+    'NOTE: h5p-server 10.0.4 does not sanitize params on the import path (only on\n' +
+      'the editor save path), so a package like "xss-in-params" would otherwise be\n' +
+      'stored verbatim and execute in every learner\'s browser. The adapter closes\n' +
+      'that gap — see apps/h5p-runtime/src/adapter/sanitize.ts.'
   );
 }
 
